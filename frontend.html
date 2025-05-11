@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Customer Churn Prediction</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f9;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        .container {
+            background: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            width: 400px;
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+
+        form {
+            display: flex;
+            flex-direction: column;
+        }
+
+        label {
+            margin: 10px 0 5px;
+            font-weight: bold;
+        }
+
+        input {
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            margin-bottom: 15px;
+        }
+
+        button {
+            padding: 10px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        .result {
+            margin-top: 20px;
+            text-align: center;
+            font-size: 18px;
+            color: #333;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Churn Prediction</h1>
+        <form id="predictionForm">
+            <label for="creditScore">User Credit Score:</label>
+            <input type="number" id="creditScore" placeholder="e.g., 600" required>
+
+            <label for="geography">the location Geography:</label>
+            <select id="geography" required>
+                <option value="France">France</option>
+                <option value="Spain">Spain</option>
+                <option value="Germany">Germany</option>
+            </select>
+
+            <label for="gender">Gender:</label>
+            <select id="gender" required>
+                <option value="Male">Male</option>
+                <option value="Female">Female</option>
+            </select>
+
+            <label for="age">How old is the person</label>
+            <input type="number" id="age" placeholder="e.g., 40" required>
+
+            <label for="tenure">How long has the user been involved with your company</label>
+            <input type="number" id="tenure" placeholder="e.g., 3" required>
+
+            <label for="balance">Users Balance:</label>
+            <input type="number" id="balance" placeholder="e.g., 60000" required>
+
+            <label for="numOfProducts">Number of Products owned by the user(Stocks):</label>
+            <input type="number" id="numOfProducts" placeholder="e.g., 2" required>
+
+            <label for="hasCrCard">Has Credit Card:</label>
+            <select id="hasCrCard" required>
+                <option value="Yes">Yes</option>
+                <option value="No">No</option>
+            </select>
+
+            <label for="isActiveMember">Is Active Member especially in events:</label>
+            <select id="isActiveMember" required>
+                <option value="Yes">Yes</option>
+                <option value="No">No</option>
+            </select>
+
+            <label for="estimatedSalary">User's estimated Salary:</label>
+            <input type="number" id="estimatedSalary" placeholder="e.g., 50000" required>
+
+            <button type="submit">Predict</button>
+        </form>
+        <div class="result" id="result"></div>
+    </div>
+
+    <script>
+        document.getElementById('predictionForm').addEventListener('submit', async function(event) {
+            event.preventDefault();
+
+            // Adjusted one-hot encoding for Geography (drop 'France')
+            const geography = document.getElementById('geography').value;
+            const geographyOneHot = [
+                geography === 'Spain' ? 1 : 0,  // Spain
+                geography === 'Germany' ? 1 : 0 // Germany
+            ];
+
+            // Adjusted one-hot encoding for Gender (drop 'Female')
+            const gender = document.getElementById('gender').value;
+            const genderOneHot = [
+                gender === 'Male' ? 1 : 0 // Male
+            ];
+
+            // Convert 'Has Credit Card' and 'Is Active Member' to 1 or 0
+            const hasCrCard = document.getElementById('hasCrCard').value === 'Yes' ? 1 : 0;
+            const isActiveMember = document.getElementById('isActiveMember').value === 'Yes' ? 1 : 0;
+
+            const featuresArray = [
+                Number(document.getElementById('creditScore').value),
+                ...geographyOneHot,
+                ...genderOneHot,
+                Number(document.getElementById('age').value),
+                Number(document.getElementById('tenure').value),
+                Number(document.getElementById('balance').value),
+                Number(document.getElementById('numOfProducts').value),
+                hasCrCard,
+                isActiveMember,
+                Number(document.getElementById('estimatedSalary').value)
+            ];
+
+            try {
+                const response = await fetch('http://127.0.0.1:5000/predict', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ features: featuresArray })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    document.getElementById('result').textContent = `Prediction: ${data.prediction}`;
+                } else {
+                    document.getElementById('result').textContent = `Error: ${data.error}`;
+                }
+            } catch (error) {
+                document.getElementById('result').textContent = `Error: ${error.message}`;
+            }
+        });
+    </script>
+</body>
+</html>
