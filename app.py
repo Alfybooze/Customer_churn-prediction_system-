@@ -35,7 +35,8 @@ except Exception as e:
 
 @app.route('/')
 def home():
-    return "Customer Churn Prediction API is running. Send POST requests to /predict endpoint."
+    """Serve the frontend HTML file"""
+    return render_template('frontend.html')
 
 @app.route('/predict', methods=['POST'])
 def predict():
@@ -104,6 +105,20 @@ def model_info():
 def test_connection():
     """Simple endpoint to test if the API is running"""
     return jsonify({"status": "API is running", "model_loaded": model is not None})
+
+@app.route('/api/status')
+def api_status():
+    """Check if the API is running"""
+    return jsonify({"status": "API is running", "model_loaded": model is not None})
+
+# Create a directory for templates if it doesn't exist
+if not os.path.exists('templates'):
+    os.makedirs('templates')
+
+# Move frontend.html to templates directory if it's not already there
+if os.path.exists('frontend.html') and not os.path.exists('templates/frontend.html'):
+    import shutil
+    shutil.move('frontend.html', 'templates/frontend.html')
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
