@@ -4,12 +4,9 @@ from flask_cors import CORS
 import numpy as np
 import logging
 import os
+import shutil
 
 app = Flask(__name__)
-
-
-port = int(os.environ.get("PORT", 5000))
-app.run(host="0.0.0.0", port=port)
 
 # Enable CORS
 CORS(app)
@@ -33,9 +30,11 @@ try:
     else:
         logger.error(f"Model file not found at {MODEL_PATH}")
         model = None
+        input_shape = None
 except Exception as e:
     logger.error(f"Error loading model: {str(e)}")
     model = None
+    input_shape = None
 
 @app.route('/')
 def home():
@@ -121,8 +120,8 @@ if not os.path.exists('templates'):
 
 # Move frontend.html to templates directory if it's not already there
 if os.path.exists('frontend.html') and not os.path.exists('templates/frontend.html'):
-    import shutil
     shutil.move('frontend.html', 'templates/frontend.html')
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host='0.0.0.0', port=port, debug=True)
