@@ -1,9 +1,10 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Customer Churn Prediction</title>
+    <title>Customer Churn Prediction System for banks</title>
     <style>
         * {
             margin: 0;
@@ -63,7 +64,8 @@
             font-size: 0.9rem;
         }
 
-        input, select {
+        input,
+        select {
             padding: 14px 16px;
             border: 2px solid #374151;
             border-radius: 12px;
@@ -73,7 +75,8 @@
             color: #f8fafc;
         }
 
-        input:focus, select:focus {
+        input:focus,
+        select:focus {
             outline: none;
             border-color: #8b5cf6;
             box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
@@ -142,6 +145,7 @@
                 opacity: 0;
                 transform: translateY(20px);
             }
+
             to {
                 opacity: 1;
                 transform: translateY(0);
@@ -175,18 +179,18 @@
             body {
                 padding: 10px;
             }
-            
+
             .container {
                 padding: 25px 20px;
                 margin: 0;
                 border-radius: 20px;
             }
-            
+
             h1 {
                 font-size: 1.7rem;
                 margin-bottom: 20px;
             }
-            
+
             .form-row {
                 grid-template-columns: 1fr;
                 gap: 15px;
@@ -196,7 +200,8 @@
                 gap: 15px;
             }
 
-            input, select {
+            input,
+            select {
                 padding: 12px 14px;
                 font-size: 0.9rem;
             }
@@ -216,15 +221,16 @@
             .container {
                 padding: 20px 15px;
             }
-            
+
             h1 {
                 font-size: 1.5rem;
             }
-            
-            input, select {
+
+            input,
+            select {
                 padding: 11px 12px;
             }
-            
+
             button {
                 padding: 12px;
             }
@@ -234,7 +240,7 @@
             h1 {
                 font-size: 1.4rem;
             }
-            
+
             .container {
                 padding: 18px 12px;
             }
@@ -252,20 +258,176 @@
         .section-title:first-of-type {
             margin-top: 0;
         }
+
+        .batch-upload {
+            margin-top: 15px;
+        }
+
+        .file-label {
+            display: block;
+            padding: 16px;
+            background: rgba(17, 24, 39, 0.8);
+            border: 2px dashed #374151;
+            border-radius: 12px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            color: #cbd5e1;
+            font-weight: 600;
+        }
+
+        .file-label:hover {
+            border-color: #8b5cf6;
+            background: rgba(17, 24, 39, 0.95);
+        }
+
+        .file-label span {
+            display: block;
+            font-size: 1rem;
+        }
+
+        .batch-result {
+            margin-top: 20px;
+            display: none;
+        }
+
+        .batch-result.show {
+            display: block;
+            animation: fadeInUp 0.5s ease;
+        }
+
+        .results-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+            background: rgba(17, 24, 39, 0.8);
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        .results-table th,
+        .results-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #374151;
+            color: #f8fafc;
+        }
+
+        .results-table th {
+            background: rgba(139, 92, 246, 0.2);
+            font-weight: 700;
+            color: #e2e8f0;
+        }
+
+        .results-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .results-table tr:hover {
+            background: rgba(139, 92, 246, 0.1);
+        }
+
+        .churn-yes {
+            color: #f87171;
+            font-weight: 600;
+        }
+
+        .churn-no {
+            color: #34d399;
+            font-weight: 600;
+        }
+
+        .download-btn {
+            margin-top: 15px;
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        }
+
+        .table-container {
+            max-height: 400px;
+            overflow-y: auto;
+            border-radius: 12px;
+        }
+
+        .table-container::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .table-container::-webkit-scrollbar-track {
+            background: rgba(17, 24, 39, 0.5);
+            border-radius: 4px;
+        }
+
+        .table-container::-webkit-scrollbar-thumb {
+            background: #8b5cf6;
+            border-radius: 4px;
+        }
+
+        .table-container::-webkit-scrollbar-thumb:hover {
+            background: #7c3aed;
+        }
+
+        .summary-stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-top: 20px;
+            margin-bottom: 20px;
+        }
+
+        .stat-card {
+            background: rgba(17, 24, 39, 0.8);
+            padding: 20px;
+            border-radius: 12px;
+            border: 2px solid rgba(139, 92, 246, 0.3);
+        }
+
+        .stat-card h3 {
+            font-size: 0.9rem;
+            color: #cbd5e1;
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 5px;
+        }
+
+        .stat-card.churn .stat-value {
+            color: #f87171;
+        }
+
+        .stat-card.no-churn .stat-value {
+            color: #34d399;
+        }
+
+        .stat-percentage {
+            font-size: 0.85rem;
+            color: #9ca3af;
+        }
+
+        @media (max-width: 640px) {
+            .summary-stats {
+                grid-template-columns: 1fr;
+                gap: 12px;
+            }
+        }
     </style>
 </head>
+
 <body>
     <div class="container">
-        <h1>🎯 Churn Prediction</h1>
+        <h1>💲Bank Churn Prediction</h1>
         <form id="predictionForm">
             <div class="section-title">Personal Information</div>
-            
+
             <div class="form-row">
                 <div class="form-group">
                     <label for="creditScore">Credit Score:</label>
                     <input type="number" id="creditScore" placeholder="e.g., 600" required>
                 </div>
-                
+
                 <div class="form-group">
                     <label for="age">Age:</label>
                     <input type="number" id="age" placeholder="e.g., 40" required>
@@ -281,7 +443,7 @@
                         <option value="Germany">Germany</option>
                     </select>
                 </div>
-                
+
                 <div class="form-group">
                     <label for="gender">Gender:</label>
                     <select id="gender" required>
@@ -292,13 +454,13 @@
             </div>
 
             <div class="section-title">Account Details</div>
-            
+
             <div class="form-row">
                 <div class="form-group">
                     <label for="tenure">Tenure (years):</label>
                     <input type="number" id="tenure" placeholder="e.g., 3" required>
                 </div>
-                
+
                 <div class="form-group">
                     <label for="numOfProducts">Number of Products:</label>
                     <input type="number" id="numOfProducts" placeholder="e.g., 2" required>
@@ -306,17 +468,17 @@
             </div>
 
             <div class="form-group">
-                <label for="balance">Account Balance:</label>
+                <label for="balance">Account Balance($):</label>
                 <input type="number" id="balance" placeholder="e.g., 60000" required>
             </div>
 
             <div class="form-group">
-                <label for="estimatedSalary">Estimated Annual Salary:</label>
+                <label for="estimatedSalary">Estimated Annual Salary($):</label>
                 <input type="number" id="estimatedSalary" placeholder="e.g., 50000" required>
             </div>
 
             <div class="section-title">Membership Status</div>
-            
+
             <div class="form-row">
                 <div class="form-group">
                     <label for="hasCrCard">Has Credit Card:</label>
@@ -325,7 +487,7 @@
                         <option value="No">No</option>
                     </select>
                 </div>
-                
+
                 <div class="form-group">
                     <label for="isActiveMember">Is Active Member:</label>
                     <select id="isActiveMember" required>
@@ -338,10 +500,234 @@
             <button type="submit">Predict Churn Risk</button>
         </form>
         <div class="result" id="result"></div>
+
+        <div class="section-title" style="margin-top: 35px;">Batch Prediction</div>
+        <div class="batch-upload">
+            <label for="csvFile" class="file-label">
+                <span>📄 Upload CSV File</span>
+                <input type="file" id="csvFile" accept=".csv" style="display: none;">
+            </label>
+            <button id="processCsv"
+                style="margin-top: 15px; background: linear-gradient(135deg, #06b6d4 0%, #8b5cf6 100%);">Process
+                CSV</button>
+        </div>
+        <div id="batchResult" class="batch-result"></div>
     </div>
 
     <script>
-        document.getElementById('predictionForm').addEventListener('submit', async function(event) {
+        let csvData = null;
+
+        // Handle file upload
+        document.getElementById('csvFile').addEventListener('change', function (event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function (e) {
+                    const text = e.target.result;
+                    csvData = parseCSV(text);
+                    document.querySelector('.file-label span').textContent = `✅ ${file.name} (${csvData.length} rows)`;
+                };
+                reader.readAsText(file);
+            }
+        });
+
+        // Parse CSV
+        function parseCSV(text) {
+            const lines = text.trim().split('\n');
+            const headers = lines[0].split(',').map(h => h.trim());
+            const data = [];
+
+            // keys that indicate an id / row number column (normalized)
+            const ID_KEYS = [
+                'row', 'RowNumber', 'row_number', 'row number',
+                'rowid', 'id', 'identifier', 'index', 'name', 'surname', 'customerid', 'customer_id', 'customer id', 'fullname', 'full_name', 'full name'
+            ];
+
+            function normalizeKey(k) {
+                return k.trim().replace(/[_\s]/g, '').toLowerCase();
+            }
+
+            // Build list of headers to keep (exclude id-like headers)
+            const keepHeaders = headers.filter(h => !ID_KEYS.includes(normalizeKey(h)));
+
+            for (let i = 1; i < lines.length; i++) {
+                const values = lines[i].split(',').map(v => v.trim());
+                const row = {};
+                keepHeaders.forEach((header) => {
+                    const idx = headers.indexOf(header);
+                    row[header] = values[idx];
+                });
+                data.push(row);
+            }
+
+            return data;
+        }
+
+        // Process CSV
+        document.getElementById('processCsv').addEventListener('click', async function () {
+            if (!csvData) {
+                alert('Please upload a CSV file first');
+                return;
+            }
+
+            const batchResultDiv = document.getElementById('batchResult');
+            batchResultDiv.innerHTML = '<p style="color: #cbd5e1; text-align: center; padding: 20px;">Processing predictions...</p>';
+            batchResultDiv.classList.add('show');
+
+            // Prepare batch features array
+            const batchFeatures = [];
+            const originalRows = [];
+
+            for (const row of csvData) {
+                const geography = row.Geography || row.geography;
+                const geographyOneHot = [
+                    geography === 'Spain' ? 1 : 0,
+                    geography === 'Germany' ? 1 : 0
+                ];
+
+                const gender = row.Gender || row.gender;
+                const genderOneHot = [
+                    gender === 'Male' ? 1 : 0
+                ];
+
+                const hasCrCard = (row.HasCrCard || row.hasCrCard || row.HasCreditCard) === '1' ||
+                    (row.HasCrCard || row.hasCrCard || row.HasCreditCard) === 'Yes' ? 1 : 0;
+                const isActiveMember = (row.IsActiveMember || row.isActiveMember) === '1' ||
+                    (row.IsActiveMember || row.isActiveMember) === 'Yes' ? 1 : 0;
+
+                const featuresArray = [
+                    Number(row.CreditScore || row.creditScore),
+                    ...geographyOneHot,
+                    ...genderOneHot,
+                    Number(row.Age || row.age),
+                    Number(row.Tenure || row.tenure),
+                    Number(row.Balance || row.balance),
+                    Number(row.NumOfProducts || row.numOfProducts),
+                    hasCrCard,
+                    isActiveMember,
+                    Number(row.EstimatedSalary || row.estimatedSalary)
+                ];
+
+                batchFeatures.push(featuresArray);
+                originalRows.push(row);
+            }
+
+            try {
+                // Send batch request to backend
+                const response = await fetch('/predict', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ features: batchFeatures })
+                });
+
+                const data = await response.json();
+
+                if (response.ok && data.batch_results) {
+                    // Combine original rows with predictions
+                    const results = data.batch_results.map((result, index) => ({
+                        ...originalRows[index],
+                        Prediction: result.prediction,
+                        Probability: result.probability
+                    }));
+
+                    displayResults(results, data.summary);
+                } else {
+                    batchResultDiv.innerHTML = `<p style="color: #f87171; text-align: center; padding: 20px;">Error: ${data.error || 'Unknown error'}</p>`;
+                }
+            } catch (error) {
+                batchResultDiv.innerHTML = `<p style="color: #f87171; text-align: center; padding: 20px;">Error: ${error.message}</p>`;
+            }
+        });
+
+        // Display results in table
+        function displayResults(results, summary) {
+            const batchResultDiv = document.getElementById('batchResult');
+
+            let html = '';
+
+            // Display summary statistics if available
+            if (summary) {
+                html += `
+                    <div class="summary-stats">
+                        <div class="stat-card churn">
+                            <h3>Will Churn</h3>
+                            <div class="stat-value">${summary.churn_count}</div>
+                            <div class="stat-percentage">${summary.churn_percentage}% of total</div>
+                        </div>
+                        <div class="stat-card no-churn">
+                            <h3>Won't Churn</h3>
+                            <div class="stat-value">${summary.no_churn_count}</div>
+                            <div class="stat-percentage">${summary.no_churn_percentage}% of total</div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            html += `
+                <div class="table-container">
+                    <table class="results-table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Credit Score</th>
+                                <th>Age</th>
+                                <th>Geography</th>
+                                <th>Prediction</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+            `;
+
+            results.forEach((result, index) => {
+                const predictionClass = result.Prediction.includes("won't leave") ? 'churn-yes' : 'churn-no';
+                const shortPrediction = result.Prediction.includes("won't leave") ? 'Won\'t Churn' : 'Will Churn';
+                html += `
+                    <tr>
+                        <td>${index + 1}</td>
+                        <td>${result.CreditScore || result.creditScore}</td>
+                        <td>${result.Age || result.age}</td>
+                        <td>${result.Geography || result.geography}</td>
+                        <td class="${predictionClass}">${shortPrediction}</td>
+                    </tr>
+                `;
+            });
+
+            html += `
+                        </tbody>
+                    </table>
+                </div>
+                <button class="download-btn" onclick="downloadResults()">Download Results</button>
+            `;
+
+            batchResultDiv.innerHTML = html;
+            window.batchResults = results; // Store for download
+        }
+
+        // Download results as CSV
+        function downloadResults() {
+            if (!window.batchResults) return;
+
+            const headers = Object.keys(window.batchResults[0]);
+            const csvContent = [
+                headers.join(','),
+                ...window.batchResults.map(row =>
+                    headers.map(header => row[header]).join(',')
+                )
+            ].join('\n');
+
+            const blob = new Blob([csvContent], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'churn_predictions.csv';
+            a.click();
+            window.URL.revokeObjectURL(url);
+        }
+
+        // Single prediction form
+        document.getElementById('predictionForm').addEventListener('submit', async function (event) {
             event.preventDefault();
 
             // Adjusted one-hot encoding for Geography (drop 'France')
@@ -401,4 +787,5 @@
         });
     </script>
 </body>
+
 </html>

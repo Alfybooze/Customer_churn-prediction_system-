@@ -6,6 +6,7 @@ import logging
 import os
 import shutil
 
+
 app = Flask(__name__)
 
 # Enable CORS
@@ -52,39 +53,114 @@ def predict():
         
         if not data or 'features' not in data:
             return jsonify({"error": "Invalid input: 'features' field is required"}), 400
-            
-        features = np.array(data['features'])
         
-        # Log the received features
-        logger.info(f"Received features: {features}")
-        logger.info(f"Feature count: {len(features)}")
+        # Check if it's a batch prediction (list of lists) or single prediction (single list)
+        features = data['features']
+        is_batch = isinstance(features[0], list) if features else False
         
-        # Based on the frontend, expecting 10 features:
-        # [creditScore, Spain, Germany, Male, age, tenure, balance, numOfProducts, hasCrCard, isActiveMember, estimatedSalary]
-        if len(features) != 10:
-            logger.warning(f"Unexpected feature count: {len(features)}. Expected 10 based on frontend.")
-        
-        # Reshape features for the model
-        features = features.reshape(1, -1)
-        
-        # Make prediction
-        prediction = model.predict(features)
-        
-        # For binary classification (churn prediction is typically binary)
-        churn_probability = float(prediction[0][0])
-        will_churn = "Yes user will most likely leave your establishment" if churn_probability > 0.5 else "No the user won't leave your establishment"
-        
-        logger.info(f"Prediction made: {will_churn} with probability {churn_probability:.4f}")
-        
-        # Return the prediction in the format expected by the frontend
-        return jsonify({
-            "prediction": will_churn,
-            "probability": float(churn_probability)
-        })
+        if is_batch:
+            # Batch prediction
+            logger.info(f"Processing batch prediction with {len(features)} samples")
+            return handle_batch_prediction(features)
+        else:
+            # Single prediction
+            logger.info("Processing single prediction")
+            return handle_single_prediction(features)
 
     except Exception as e:
         logger.error(f"Prediction error: {str(e)}")
         return jsonify({"error": f"Prediction failed: {str(e)}"}), 500
+
+def handle_single_prediction(features):
+    """Handle single customer prediction"""
+    features = np.array(features)
+    
+    # Log the received features
+    logger.info(f"Received features: {features}")
+    logger.info(f"Feature count: {len(features)}")
+    
+    # Expecting 10 features based on frontend
+    if len(features) != 10:
+        logger.warning(f"Unexpected feature count: {len(features)}. Expected 10 based on frontend.")
+    
+    # Reshape features for the model
+    features = features.reshape(1, -1)
+    
+    # Make prediction
+    prediction = model.predict(features)
+    
+    # For binary classification
+    churn_probability = float(prediction[0][0])
+    will_churn = "Yes user will most likely leave your establishment" if churn_probability > 0.5 else "No the user won't leave your establishment"
+    
+    logger.info(f"Prediction made: {will_churn} with probability {churn_probability:.4f}")
+    
+    return jsonify({
+        "prediction": will_churn,
+        "probability": float(churn_probability)
+    })
+
+def handle_batch_prediction(batch_features):
+    """Handle batch prediction for multiple customers"""
+    # Convert to numpy array
+    features_array = np.array(batch_features)
+    
+    logger.info(f"Batch shape: {features_array.shape}")
+    
+    # Validate feature count
+    if features_array.shape[1] != 11:
+        return jsonify({
+            "error": f"Invalid feature count. Expected 10, got {features_array.shape[1]}"
+        }), 400
+    
+    # Make predictions for all samples
+    predictions = model.predict(features_array)
+    
+    # Process results
+    results = []
+    churn_count = 0
+    no_churn_count = 0
+    
+    for i, pred in enumerate(predictions):
+        churn_probability = float(pred[0])
+        will_churn = churn_probability > 0.5
+        
+        logger.info(f"Sample {i+1}: probability = {churn_probability:.4f}")
+        
+        if will_churn:
+            churn_count += 1
+            prediction_text = "Yes user will most likely leave your establishment"
+        else:
+            no_churn_count += 1
+            prediction_text = "No the user won't leave your establishment"
+        
+        results.append({
+            "sample_id": i + 1,
+            "prediction": prediction_text,
+            "probability": churn_probability,
+            "will_churn": will_churn
+        })
+        
+    
+    # Calculate percentages
+    total_samples = len(predictions)
+    churn_percentage = (churn_count / total_samples) * 100
+    no_churn_percentage = (no_churn_count / total_samples) * 100
+    
+    # Add in handle_batch_prediction function:
+    
+    logger.info(f"Batch prediction complete: {churn_count} will churn, {no_churn_count} won't churn")
+    
+    return jsonify({
+        "batch_results": results,
+        "summary": {
+            "total_samples": total_samples,
+            "churn_count": churn_count,
+            "no_churn_count": no_churn_count,
+            "churn_percentage": round(churn_percentage, 2),
+            "no_churn_percentage": round(no_churn_percentage, 2)
+        }
+    })
 
 @app.route('/model-info', methods=['GET'])
 def model_info():
