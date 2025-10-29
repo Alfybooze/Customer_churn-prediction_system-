@@ -538,31 +538,96 @@
             const data = [];
 
             // keys that indicate an id / row number column (normalized)
-            const ID_KEYS = [
-                'row', 'RowNumber', 'row_number', 'row number',
-                'rowid', 'id', 'identifier', 'index', 'name', 'surname', 'customerid', 'customer_id', 'customer id', 'fullname', 'full_name', 'full name'
-            ];
-
-            function normalizeKey(k) {
-                return k.trim().replace(/[_\s]/g, '').toLowerCase();
-            }
-
-            // Build list of headers to keep (exclude id-like headers)
-            const keepHeaders = headers.filter(h => !ID_KEYS.includes(normalizeKey(h)));
-
             for (let i = 1; i < lines.length; i++) {
-                const values = lines[i].split(',').map(v => v.trim());
+                const line = lines[i].trim();
+                if (!line) continue; // Skip empty lines
+
+                const values = line.split(',');
                 const row = {};
-                keepHeaders.forEach((header) => {
-                    const idx = headers.indexOf(header);
-                    row[header] = values[idx];
-                });
+
+                // Create object with header-value pairs
+                for (let j = 0; j < headers.length; j++) {
+                    row[headers[j]] = values[j] ? values[j].trim() : '';
+                }
+
                 data.push(row);
             }
 
             return data;
         }
 
+        function normalizeKey(k) {
+            return String(k || '').trim().replace(/[_\s]/g, '').toLowerCase();
+        }
+
+        // Safe value getter from a row object. Accepts multiple possible header names.
+        function getVal(row, possibleKeys, defaultVal = '') {
+            for (const k of possibleKeys) {
+                if (k in row && row[k] !== undefined && row[k] !== '') return row[k];
+            }
+            // try normalized keys
+            const normalized = Object.keys(row).reduce((acc, key) => {
+                acc[normalizeKey(key)] = row[key];
+                return acc;
+            }, {});
+            for (const k of possibleKeys) {
+                const nk = normalizeKey(k);
+                if (nk in normalized && normalized[nk] !== undefined && normalized[nk] !== '') return normalized[nk];
+            }
+            return defaultVal;
+        }
+        function toBinary(val) {
+            if (val === undefined || val === null) return 0;
+            const s = String(val).trim().toLowerCase();
+            if (s === '1' || s === 'yes' || s === 'true' || s === 'y' || s === 't') return 1;
+            return 0;
+        }
+        function buildFeatureArray(row) {
+            // Accept many header naming variants for robustness
+            const creditScore = Number(getVal(row, ['CreditScore', 'creditscore', 'credit_score'], 600));
+            const geographyRaw = String(getVal(row, ['Geography', 'geography'], 'France')).trim();
+            const genderRaw = String(getVal(row, ['Gender', 'gender', 'Sex'], 'Female')).trim();
+
+            // label encoding: drop France (base). Keep Spain and Germany.
+            let geography_encoded = 0; // Default to France
+            if (geographyRaw.toLowerCase() === 'spain') {
+                geography_encoded = 2;
+            } else if (geographyRaw.toLowerCase() === 'germany') {
+                geography_encoded = 1;
+            }
+
+            // One-hot for gender (drop Female)
+            const gender_male = genderRaw.toLowerCase() === 'male' ? 1 : 0;
+
+            const age = Number(getVal(row, ['Age', 'age'], 40));
+            const tenure = Number(getVal(row, ['Tenure', 'tenure', 'YearsWithBank'], 3));
+            const balance = Number(getVal(row, ['Balance', 'balance', 'AccountBalance'], 0));
+            const numOfProducts = Number(getVal(row, ['NumOfProducts', 'numofproducts', 'num_of_products'], 1));
+
+            const hasCrCard = toBinary(getVal(row, ['HasCrCard', 'hascrcard', 'HasCreditCard', 'hascreditcard'], 'No'));
+            const isActiveMember = toBinary(getVal(row, ['IsActiveMember', 'isactivemember', 'IsActive'], 'No'));
+
+            const estimatedSalary = Number(getVal(row, ['EstimatedSalary', 'estimatedsalary', 'Salary', 'AnnualSalary'], 0));
+
+            // Validate numeric fields and return null if critical missing
+            if (Number.isNaN(creditScore) || Number.isNaN(age) || Number.isNaN(tenure) || Number.isNaN(balance)) {
+                // invalid row -> skip it by returning null
+                return null;
+            }
+
+            return [
+                creditScore,
+                geography_encoded,
+                gender_male,
+                age,
+                tenure,
+                balance,
+                numOfProducts,
+                hasCrCard,
+                isActiveMember,
+                estimatedSalary
+            ];
+        }
         // Process CSV
         document.getElementById('processCsv').addEventListener('click', async function () {
             if (!csvData) {
@@ -577,39 +642,23 @@
             // Prepare batch features array
             const batchFeatures = [];
             const originalRows = [];
+            const skippedRows = [];
 
-            for (const row of csvData) {
-                const geography = row.Geography || row.geography;
-                const geographyOneHot = [
-                    geography === 'Spain' ? 1 : 0,
-                    geography === 'Germany' ? 1 : 0
-                ];
-
-                const gender = row.Gender || row.gender;
-                const genderOneHot = [
-                    gender === 'Male' ? 1 : 0
-                ];
-
-                const hasCrCard = (row.HasCrCard || row.hasCrCard || row.HasCreditCard) === '1' ||
-                    (row.HasCrCard || row.hasCrCard || row.HasCreditCard) === 'Yes' ? 1 : 0;
-                const isActiveMember = (row.IsActiveMember || row.isActiveMember) === '1' ||
-                    (row.IsActiveMember || row.isActiveMember) === 'Yes' ? 1 : 0;
-
-                const featuresArray = [
-                    Number(row.CreditScore || row.creditScore),
-                    ...geographyOneHot,
-                    ...genderOneHot,
-                    Number(row.Age || row.age),
-                    Number(row.Tenure || row.tenure),
-                    Number(row.Balance || row.balance),
-                    Number(row.NumOfProducts || row.numOfProducts),
-                    hasCrCard,
-                    isActiveMember,
-                    Number(row.EstimatedSalary || row.estimatedSalary)
-                ];
-
-                batchFeatures.push(featuresArray);
+            // Build features, skip rows that don't produce a valid feature vector
+            for (let i = 0; i < csvData.length; i++) {
+                const row = csvData[i];
+                const features = (typeof buildFeatureArray === 'function') ? buildFeatureArray(row) : localBuildFeatureArray(row);
+                if (!features || !Array.isArray(features)) {
+                    skippedRows.push({ index: i, row });
+                    continue;
+                }
+                batchFeatures.push(features);
                 originalRows.push(row);
+            }
+
+            if (batchFeatures.length === 0) {
+                batchResultDiv.innerHTML = `<p style="color: #f87171; text-align: center; padding: 20px;">No valid rows found to predict. ${skippedRows.length} row(s) skipped.</p>`;
+                return;
             }
 
             try {
@@ -732,10 +781,12 @@
 
             // Adjusted one-hot encoding for Geography (drop 'France')
             const geography = document.getElementById('geography').value;
-            const geographyOneHot = [
-                geography === 'Spain' ? 1 : 0,  // Spain
-                geography === 'Germany' ? 1 : 0 // Germany
-            ];
+            let geography_encoded = 0; // Default to France
+            if (geography === 'Spain') {
+                geography_encoded = 2;
+            } else if (geography === 'Germany') {
+                geography_encoded = 1;
+            }
 
             // Adjusted one-hot encoding for Gender (drop 'Female')
             const gender = document.getElementById('gender').value;
@@ -749,7 +800,7 @@
 
             const featuresArray = [
                 Number(document.getElementById('creditScore').value),
-                ...geographyOneHot,
+                geography_encoded,
                 ...genderOneHot,
                 Number(document.getElementById('age').value),
                 Number(document.getElementById('tenure').value),
@@ -785,6 +836,7 @@
                 resultDiv.textContent = `Error: ${error.message}`;
             }
         });
+
     </script>
 </body>
 

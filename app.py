@@ -1,10 +1,12 @@
 from flask import Flask, request, jsonify, render_template
-from tensorflow.keras.models import load_model
-from flask_cors import CORS
+from sklearn.ensemble import GradientBoostingClassifier
+from sklearn.preprocessing import StandardScaler
+import joblib
 import numpy as np
 import logging
 import os
 import shutil
+from flask_cors import CORS
 
 
 app = Flask(__name__)
@@ -17,25 +19,17 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # Define the model path
-MODEL_PATH = 'Customer_churning.keras'  # Change this to your model's location
+MODEL_PATH = 'gradient_boosting_churn_model.pkl'  # Change this to your model's location
 
 # Load the pre-trained TensorFlow model
+
+# Replace the current model loading section (around line 15-25)
 try:
-    if os.path.exists(MODEL_PATH):
-        model = load_model(MODEL_PATH)
-        logger.info(f"Model loaded successfully from {MODEL_PATH}")
-        
-        # Get the input shape from the model
-        input_shape = model.input_shape[1:]
-        logger.info(f"Model expects input shape: {input_shape}")
-    else:
-        logger.error(f"Model file not found at {MODEL_PATH}")
-        model = None
-        input_shape = None
+    model = joblib.load(MODEL_PATH)
+    logging.info("✅ Gradient Boosting model loaded successfully")
 except Exception as e:
-    logger.error(f"Error loading model: {str(e)}")
+    logging.error(f"❌ Error loading Gradient Boosting model: {e}")
     model = None
-    input_shape = None
 
 @app.route('/')
 def home():
@@ -90,7 +84,7 @@ def handle_single_prediction(features):
     prediction = model.predict(features)
     
     # For binary classification
-    churn_probability = float(prediction[0][0])
+    churn_probability = float(prediction[0])
     will_churn = "Yes user will most likely leave your establishment" if churn_probability > 0.5 else "No the user won't leave your establishment"
     
     logger.info(f"Prediction made: {will_churn} with probability {churn_probability:.4f}")
@@ -108,7 +102,7 @@ def handle_batch_prediction(batch_features):
     logger.info(f"Batch shape: {features_array.shape}")
     
     # Validate feature count
-    if features_array.shape[1] != 11:
+    if features_array.shape[1] != 10:
         return jsonify({
             "error": f"Invalid feature count. Expected 10, got {features_array.shape[1]}"
         }), 400
@@ -122,7 +116,7 @@ def handle_batch_prediction(batch_features):
     no_churn_count = 0
     
     for i, pred in enumerate(predictions):
-        churn_probability = float(pred[0])
+        churn_probability = float(pred)
         will_churn = churn_probability > 0.5
         
         logger.info(f"Sample {i+1}: probability = {churn_probability:.4f}")
